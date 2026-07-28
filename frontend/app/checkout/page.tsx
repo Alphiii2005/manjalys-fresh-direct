@@ -35,16 +35,23 @@ export default function CheckoutPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    await fetch("http://127.0.0.1:8000/api/orders/", {
-        method: "POST",
-        headers: {
-        "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-        customer: formData,
-        cart: cart,
-        }),
-     });
+    const response = await fetch(
+        "http://127.0.0.1:8000/api/orders/",
+        {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+            customer: formData,
+            cart: cart,
+            }),
+        }
+        );
+
+        const data = await response.json();
+
+        console.log(data);
     }
   return (
     <main className="max-w-6xl mx-auto p-8">
