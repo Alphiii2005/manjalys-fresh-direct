@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useCart } from "@/context/CartContext";
 
 
@@ -108,11 +110,12 @@ export default function CartPage() {
         Total: £{total.toFixed(2)}
         </h2>
 
-        <button
-        className="bg-green-600 text-white px-6 py-3 rounded-lg mt-4 hover:bg-green-700"
-        >
-        Proceed to Checkout
-        </button>
+        <Link
+            href="/checkout"
+            className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg mt-4 hover:bg-green-700"
+            >
+            Proceed to Checkout
+        </Link>
 
     </div>
     )}
