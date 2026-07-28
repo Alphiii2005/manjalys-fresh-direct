@@ -1,4 +1,5 @@
 import ProductCard from "@/components/ProductCard";
+import Navbar from "@/components/Navbar";
 
 async function getProducts() {
   const response = await fetch(
@@ -14,7 +15,7 @@ export default async function Home() {
 
   return (
     <main>
-      <h1>Manjaly's Fresh Direct</h1>
+      <Navbar />
 
       {products.map((product: any) => (
         <ProductCard

@@ -1,3 +1,7 @@
+"use client";
+
+import { useCart } from "@/context/CartContext";
+
 type Product = {
   id: number;
   name: string;
@@ -13,6 +17,10 @@ export default function ProductCard({
 }: {
   product: Product;
 }) {
+
+    
+  const { addToCart } = useCart();
+  
   return (
     <div className="border rounded-xl p-5 shadow-lg w-80 hover:shadow-xl hover:-translate-y-2 transition duration-300">
       {product.image && (
@@ -37,7 +45,10 @@ export default function ProductCard({
         Available: {product.stock_kg} kg
       </p>
 
-      <button className="bg-green-600 text-white font-semibold px-5 py-2 rounded-lg mt-4 hover:bg-green-700 transition">
+      <button
+        onClick={() => addToCart(product)}
+        className="bg-green-600 text-white font-semibold px-5 py-2 rounded-lg mt-4 hover:bg-green-700 transition"
+        >
         Add to Cart
       </button>
     </div>
