@@ -12,6 +12,13 @@ class Order(models.Model):
         ("completed", "Completed"),
     ]
 
+    PAYMENT_STATUS = [
+        ("unpaid", "Unpaid"),
+        ("paid", "Paid"),
+        ("failed", "Failed"),
+    ]
+
+
     full_name = models.CharField(max_length=100)
     email = models.EmailField()
     phone = models.CharField(max_length=20)
@@ -31,6 +38,12 @@ class Order(models.Model):
         max_length=20,
         choices=STATUS_CHOICES,
         default="pending"
+    )
+
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PAYMENT_STATUS,
+        default="unpaid"
     )
 
     created_at = models.DateTimeField(
