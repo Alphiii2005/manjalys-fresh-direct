@@ -32,6 +32,20 @@ export default function CheckoutPage() {
     });
   }
 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    await fetch("http://127.0.0.1:8000/api/orders/", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+        customer: formData,
+        cart: cart,
+        }),
+     });
+    }
   return (
     <main className="max-w-6xl mx-auto p-8">
 
@@ -46,7 +60,10 @@ export default function CheckoutPage() {
             Customer Information
             </h2>
 
-            <form className="space-y-4">
+            <form
+                onSubmit={handleSubmit}
+                className="space-y-4"
+            >
 
                 <input
                     type="text"
@@ -116,6 +133,13 @@ export default function CheckoutPage() {
                     className="w-full border rounded-lg p-3"
                     rows={4}
                 />
+
+                <button
+                    type="submit"
+                    className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition"
+                    >
+                    Pay Securely
+                </button>
 
                 </form>
         </div>
