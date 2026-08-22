@@ -12,8 +12,14 @@ class Product(models.Model):
 
     stock_kg = models.DecimalField(
         max_digits=8,
-        decimal_places=1,
+        decimal_places=2,
         default=0
+    )
+
+    quantity_increment = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=1.50
     )
 
     image = models.ImageField(

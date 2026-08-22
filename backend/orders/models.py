@@ -6,7 +6,6 @@ class Order(models.Model):
 
     STATUS_CHOICES = [
         ("pending", "Pending"),
-        ("paid", "Paid"),
         ("preparing", "Preparing"),
         ("delivery", "Out for Delivery"),
         ("completed", "Completed"),
@@ -18,16 +17,31 @@ class Order(models.Model):
         ("failed", "Failed"),
     ]
 
+    full_name = models.CharField(
+        max_length=100
+    )
 
-    full_name = models.CharField(max_length=100)
     email = models.EmailField()
-    phone = models.CharField(max_length=20)
 
-    address = models.CharField(max_length=255)
-    city = models.CharField(max_length=100)
-    postcode = models.CharField(max_length=20)
+    phone = models.CharField(
+        max_length=20
+    )
 
-    notes = models.TextField(blank=True)
+    address = models.CharField(
+        max_length=255
+    )
+
+    city = models.CharField(
+        max_length=100
+    )
+
+    postcode = models.CharField(
+        max_length=20
+    )
+
+    notes = models.TextField(
+        blank=True
+    )
 
     total_price = models.DecimalField(
         max_digits=10,
@@ -50,10 +64,8 @@ class Order(models.Model):
         auto_now_add=True
     )
 
-
     def __str__(self):
         return f"Order {self.id} - {self.full_name}"
-
 
 
 class OrderItem(models.Model):
@@ -70,15 +82,14 @@ class OrderItem(models.Model):
     )
 
     quantity = models.DecimalField(
-        max_digits=5,
-        decimal_places=1
+        max_digits=6,
+        decimal_places=2
     )
 
     price = models.DecimalField(
         max_digits=10,
         decimal_places=2
     )
-
 
     def __str__(self):
         return self.product.name
