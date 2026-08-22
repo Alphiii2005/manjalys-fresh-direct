@@ -1,13 +1,12 @@
 import stripe
 
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-import json
 
 from .models import Order, OrderItem
 from products.models import Product
@@ -192,36 +191,148 @@ class CreateOrderView(APIView):
 
         )
 
+
 @csrf_exempt
 def stripe_webhook(request):
 
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "Only POST requests are allowed."},
+            status=405
+        )
+
     payload = request.body
 
-    event = json.loads(payload)
+    sig_header = request.META.get(
+        "HTTP_STRIPE_SIGNATURE"
+    )
 
+    if not sig_header:
+        return JsonResponse(
+            {"error": "Missing Stripe signature."},
+            status=400
+        )
+
+    try:
+
+        event = stripe.Webhook.construct_event(
+            payload,
+            sig_header,
+            settings.STRIPE_WEBHOOK_SECRET
+        )
+
+    except ValueError:
+
+        print("WEBHOOK ERROR: Invalid payload")
+
+        return JsonResponse(
+            {"error": "Invalid payload."},
+            status=400
+        )
+
+    except stripe.error.SignatureVerificationError:
+
+        print("WEBHOOK ERROR: Invalid signature")
+
+        return JsonResponse(
+            {"error": "Invalid signature."},
+            status=400
+        )
+
+    print(
+        "STRIPE EVENT RECEIVED:",
+        event["type"]
+    )
+
+    # ----------------------------------------
+    # Checkout completed
+    # ----------------------------------------
 
     if event["type"] == "checkout.session.completed":
 
         session = event["data"]["object"]
 
-
-        order_id = session["metadata"]["order_id"]
-
-
-        order = Order.objects.get(
-            id=order_id
+        print(
+            "CHECKOUT SESSION:",
+            session["id"]
         )
 
+        # Get metadata
+        metadata = session["metadata"]
 
-        order.payment_status = "paid"
+        print(
+            "METADATA:",
+            metadata
+        )
 
-        order.status = "pending"
+        order_id = metadata["order_id"]
 
-        order.save()
+        print(
+            "ORDER ID:",
+            order_id
+        )
 
+        if not order_id:
+            return JsonResponse(
+                {"error": "No order_id in metadata."},
+                status=400
+            )
+
+        # Find Django order
+        try:
+
+            order = Order.objects.get(
+                id=order_id
+            )
+
+        except Order.DoesNotExist:
+
+            print(
+                "WEBHOOK ERROR: Order does not exist:",
+                order_id
+            )
+
+            return JsonResponse(
+                {"error": "Order not found."},
+                status=404
+            )
+
+        print(
+            "ORDER FOUND:",
+            order.id
+        )
+
+        # ----------------------------------------
+        # Only mark paid if Stripe says paid
+        # ----------------------------------------
+
+        if session["payment_status"] == "paid":
+
+            order.payment_status = "paid"
+
+            order.status = "pending"
+
+            order.save(
+                update_fields=[
+                    "payment_status",
+                    "status"
+                ]
+            )
+
+            print(
+                f"ORDER #{order.id} MARKED AS PAID"
+            )
+
+        else:
+
+            print(
+                "PAYMENT NOT COMPLETED:",
+                session["payment_status"]
+            )
 
     return JsonResponse(
         {
             "status": "success"
-        }
+        },
+        status=200
     )
