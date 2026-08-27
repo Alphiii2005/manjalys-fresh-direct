@@ -128,32 +128,45 @@ class OrderAdmin(admin.ModelAdmin):
     )
     def payment_status_badge(self, obj):
 
-        if obj.payment_status == "paid":
+        payment_styles = {
 
-            return format_html(
-                '<span style="color:#155724; '
-                'background:#d4edda; '
-                'padding:4px 10px; '
-                'border-radius:12px; '
-                'font-weight:bold;">✓ PAID</span>'
+            "paid": (
+                "#155724",
+                "#d4edda",
+                "✓ PAID",
+            ),
+
+            "failed": (
+                "#721c24",
+                "#f8d7da",
+                "✕ FAILED",
+            ),
+
+            "unpaid": (
+                "#856404",
+                "#fff3cd",
+                "● UNPAID",
+            ),
+        }
+
+        text_color, background, label = payment_styles.get(
+            obj.payment_status,
+            (
+                "#383d41",
+                "#e2e3e5",
+                obj.payment_status.upper(),
             )
-
-        elif obj.payment_status == "failed":
-
-            return format_html(
-                '<span style="color:#721c24; '
-                'background:#f8d7da; '
-                'padding:4px 10px; '
-                'border-radius:12px; '
-                'font-weight:bold;">✕ FAILED</span>'
-            )
+        )
 
         return format_html(
-            '<span style="color:#856404; '
-            'background:#fff3cd; '
+            '<span style="color:{}; '
+            'background:{}; '
             'padding:4px 10px; '
             'border-radius:12px; '
-            'font-weight:bold;">● UNPAID</span>'
+            'font-weight:bold;">{}</span>',
+            text_color,
+            background,
+            label,
         )
 
     # =====================================================
@@ -174,7 +187,7 @@ class OrderAdmin(admin.ModelAdmin):
                 "● PENDING",
             ),
 
-             "confirmed": (
+            "confirmed": (
                 "#155724",
                 "#d4edda",
                 "✓ CONFIRMED",
