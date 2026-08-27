@@ -5,7 +5,7 @@ from .models import Order, OrderItem
 
 
 # =========================================================
-# ORDER ITEMS
+# ORDER ITEMS INLINE
 # =========================================================
 
 class OrderItemInline(admin.TabularInline):
@@ -119,7 +119,7 @@ class OrderAdmin(admin.ModelAdmin):
     )
 
     # =====================================================
-    # PAYMENT STATUS
+    # PAYMENT STATUS BADGE
     # =====================================================
 
     @admin.display(
@@ -135,8 +135,7 @@ class OrderAdmin(admin.ModelAdmin):
                 'background:#d4edda; '
                 'padding:4px 10px; '
                 'border-radius:12px; '
-                'font-weight:bold;">{}</span>',
-                "✓ PAID"
+                'font-weight:bold;">✓ PAID</span>'
             )
 
         elif obj.payment_status == "failed":
@@ -146,23 +145,19 @@ class OrderAdmin(admin.ModelAdmin):
                 'background:#f8d7da; '
                 'padding:4px 10px; '
                 'border-radius:12px; '
-                'font-weight:bold;">{}</span>',
-                "✕ FAILED"
+                'font-weight:bold;">✕ FAILED</span>'
             )
 
-        else:
-
-            return format_html(
-                '<span style="color:#856404; '
-                'background:#fff3cd; '
-                'padding:4px 10px; '
-                'border-radius:12px; '
-                'font-weight:bold;">{}</span>',
-                "● UNPAID"
-            )
+        return format_html(
+            '<span style="color:#856404; '
+            'background:#fff3cd; '
+            'padding:4px 10px; '
+            'border-radius:12px; '
+            'font-weight:bold;">● UNPAID</span>'
+        )
 
     # =====================================================
-    # ORDER STATUS
+    # ORDER STATUS BADGE
     # =====================================================
 
     @admin.display(
@@ -179,10 +174,10 @@ class OrderAdmin(admin.ModelAdmin):
                 "● PENDING",
             ),
 
-            "paid": (
+             "confirmed": (
                 "#155724",
                 "#d4edda",
-                "✓ PAID",
+                "✓ CONFIRMED",
             ),
 
             "preparing": (
@@ -201,6 +196,12 @@ class OrderAdmin(admin.ModelAdmin):
                 "#155724",
                 "#d4edda",
                 "✓ COMPLETED",
+            ),
+
+            "cancelled": (
+                "#721c24",
+                "#f8d7da",
+                "✕ CANCELLED",
             ),
         }
 
