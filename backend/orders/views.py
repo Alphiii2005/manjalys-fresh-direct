@@ -13,6 +13,10 @@ from rest_framework import status
 from .models import Order, OrderItem
 from products.models import Product
 
+from .emails import (
+    send_customer_order_confirmation,
+    send_owner_new_order_notification,
+)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -591,6 +595,52 @@ def stripe_webhook(request):
                 f"ORDER #{order.id} "
                 "MARKED AS PAID"
             )
+
+             # --------------------------------
+            # Send customer confirmation email
+            # --------------------------------
+
+            try:
+
+                send_customer_order_confirmation(
+                    order
+                )
+
+                print(
+                    f"CUSTOMER EMAIL SENT "
+                    f"FOR ORDER #{order.id}"
+                )
+
+            except Exception as error:
+
+                print(
+                    f"CUSTOMER EMAIL ERROR "
+                    f"FOR ORDER #{order.id}:",
+                    error
+                )
+
+            # --------------------------------
+            # Send owner notification email
+            # --------------------------------
+
+            try:
+
+                send_owner_new_order_notification(
+                    order
+                )
+
+                print(
+                    f"OWNER NOTIFICATION SENT "
+                    f"FOR ORDER #{order.id}"
+                )
+
+            except Exception as error:
+
+                print(
+                    f"OWNER EMAIL ERROR "
+                    f"FOR ORDER #{order.id}:",
+                    error
+                )
 
     return JsonResponse(
         {
