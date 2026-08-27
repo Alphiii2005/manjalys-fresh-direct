@@ -1,0 +1,784 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+
+<div class="dashboard-header">
+    <div>
+        <h1>Manjaly's Fresh Direct Dashboard</h1>
+        <p>Manage orders, payments, and stock from one place.</p>
+    </div>
+</div>
+
+
+<!-- ================================================= -->
+<!-- STATISTICS CARDS -->
+<!-- ================================================= -->
+
+<div class="dashboard-stats">
+
+    <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div>
+            <span class="stat-label">TOTAL ORDERS</span>
+            <h2>{{ dashboard_total_orders }}</h2>
+        </div>
+    </div>
+
+
+    <div class="stat-card">
+        <div class="stat-icon">💳</div>
+        <div>
+            <span class="stat-label">PAID ORDERS</span>
+            <h2>{{ dashboard_paid_orders }}</h2>
+        </div>
+    </div>
+
+
+    <div class="stat-card">
+        <div class="stat-icon">⏳</div>
+        <div>
+            <span class="stat-label">PENDING ORDERS</span>
+            <h2>{{ dashboard_pending_orders }}</h2>
+        </div>
+    </div>
+
+
+    <div class="stat-card warning">
+        <div class="stat-icon">⚠️</div>
+        <div>
+            <span class="stat-label">LOW STOCK</span>
+            <h2>{{ dashboard_low_stock_products }}</h2>
+        </div>
+    </div>
+
+
+    <div class="stat-card danger">
+        <div class="stat-icon">🚫</div>
+        <div>
+            <span class="stat-label">OUT OF STOCK</span>
+            <h2>{{ dashboard_out_of_stock_products }}</h2>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- ================================================= -->
+<!-- MAIN DASHBOARD GRID -->
+<!-- ================================================= -->
+
+<div class="dashboard-grid">
+
+
+    <!-- RECENT ORDERS -->
+
+    <div class="dashboard-panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>Recent Orders</h2>
+                <p>Latest customer purchases</p>
+            </div>
+
+            <a href="/admin/orders/order/">
+                View All Orders →
+            </a>
+
+        </div>
+
+
+        {% if dashboard_recent_orders %}
+
+        <div class="orders-table-wrapper">
+
+            <table class="recent-orders-table">
+
+                <thead>
+                    <tr>
+                        <th>ORDER</th>
+                        <th>CUSTOMER</th>
+                        <th>TOTAL</th>
+                        <th>PAYMENT</th>
+                        <th>STATUS</th>
+                    </tr>
+                </thead>
+
+
+                <tbody>
+
+                    {% for order in dashboard_recent_orders %}
+
+                    <tr>
+
+                        <td>
+                            <a href="/admin/orders/order/{{ order.id }}/change/">
+                                #{{ order.id }}
+                            </a>
+                        </td>
+
+
+                        <td>
+                            <strong>{{ order.full_name }}</strong>
+                            <span>{{ order.email }}</span>
+                        </td>
+
+
+                        <td>
+                            £{{ order.total_price }}
+                        </td>
+
+
+                        <td>
+
+                            {% if order.payment_status == "paid" %}
+
+                                <span class="badge badge-paid">
+                                    ✓ Paid
+                                </span>
+
+                            {% elif order.payment_status == "failed" %}
+
+                                <span class="badge badge-failed">
+                                    ✕ Failed
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge badge-unpaid">
+                                    ● Unpaid
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            <span class="badge badge-{{ order.status }}">
+                                {{ order.get_status_display }}
+                            </span>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-icon">📦</div>
+
+                <h3>No orders yet</h3>
+
+                <p>
+                    Customer orders will appear here.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- QUICK ACTIONS -->
+
+    <div class="dashboard-panel quick-actions">
+
+        <h2>Quick Actions</h2>
+
+        <p>
+            Jump straight to the areas you use most.
+        </p>
+
+
+        <a
+            href="/admin/orders/order/"
+            class="quick-action"
+        >
+
+            <span>📦</span>
+
+            <div>
+                <strong>Manage Orders</strong>
+                <small>
+                    View and update customer orders
+                </small>
+            </div>
+
+        </a>
+
+
+        <a
+            href="/admin/products/product/"
+            class="quick-action"
+        >
+
+            <span>🥩</span>
+
+            <div>
+                <strong>Manage Products</strong>
+                <small>
+                    Update products and pricing
+                </small>
+            </div>
+
+        </a>
+
+
+        <a
+            href="/admin/products/product/?stock_kg__lte=0"
+            class="quick-action"
+        >
+
+            <span>🚫</span>
+
+            <div>
+                <strong>Check Stock</strong>
+                <small>
+                    Review low and unavailable products
+                </small>
+            </div>
+
+        </a>
+
+    </div>
+
+
+</div>
+
+
+<!-- ================================================= -->
+<!-- ORIGINAL DJANGO ADMIN APPS -->
+<!-- ================================================= -->
+
+<div class="django-admin-section">
+
+    <h2>Administration</h2>
+
+    {{ block.super }}
+
+</div>
+
+
+<style>
+
+
+/* ================================================= */
+/* DASHBOARD HEADER */
+/* ================================================= */
+
+.dashboard-header {
+
+    margin-bottom: 28px;
+
+}
+
+.dashboard-header h1 {
+
+    margin: 0;
+
+    font-size: 30px;
+
+    font-weight: 700;
+
+}
+
+.dashboard-header p {
+
+    margin-top: 6px;
+
+    opacity: 0.7;
+
+}
+
+
+/* ================================================= */
+/* STATISTICS */
+/* ================================================= */
+
+.dashboard-stats {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(190px, 1fr));
+
+    gap: 18px;
+
+    margin-bottom: 28px;
+
+}
+
+
+.stat-card {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    padding: 22px;
+
+    border-radius: 14px;
+
+    background: var(--body-bg);
+
+    border: 1px solid var(--hairline-color);
+
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+
+}
+
+
+.stat-card:hover {
+
+    transform: translateY(-3px);
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,0.10);
+
+}
+
+
+.stat-icon {
+
+    font-size: 30px;
+
+}
+
+
+.stat-label {
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    letter-spacing: 1px;
+
+    opacity: 0.6;
+
+}
+
+
+.stat-card h2 {
+
+    margin: 4px 0 0;
+
+    font-size: 28px;
+
+}
+
+
+.stat-card.warning {
+
+    border-color: #d6a700;
+
+}
+
+
+.stat-card.danger {
+
+    border-color: #c0392b;
+
+}
+
+
+/* ================================================= */
+/* MAIN GRID */
+/* ================================================= */
+
+.dashboard-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 2fr)
+        minmax(280px, 1fr);
+
+    gap: 24px;
+
+    margin-bottom: 32px;
+
+}
+
+
+.dashboard-panel {
+
+    background: var(--body-bg);
+
+    border:
+
+        1px solid
+        var(--hairline-color);
+
+    border-radius: 14px;
+
+    padding: 24px;
+
+    box-shadow:
+
+        0 4px 15px
+        rgba(0,0,0,0.06);
+
+}
+
+
+.panel-header {
+
+    display: flex;
+
+    justify-content:
+        space-between;
+
+    align-items: center;
+
+    margin-bottom: 20px;
+
+}
+
+
+.panel-header h2,
+.dashboard-panel h2 {
+
+    margin: 0;
+
+    font-size: 20px;
+
+}
+
+
+.panel-header p,
+.quick-actions > p {
+
+    margin: 5px 0 0;
+
+    opacity: 0.65;
+
+}
+
+
+.panel-header a {
+
+    text-decoration: none;
+
+    font-weight: 600;
+
+}
+
+
+/* ================================================= */
+/* RECENT ORDERS */
+/* ================================================= */
+
+.orders-table-wrapper {
+
+    overflow-x: auto;
+
+}
+
+
+.recent-orders-table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+}
+
+
+.recent-orders-table th {
+
+    text-align: left;
+
+    font-size: 11px;
+
+    letter-spacing: 1px;
+
+    opacity: 0.55;
+
+    padding: 12px;
+
+}
+
+
+.recent-orders-table td {
+
+    padding: 14px 12px;
+
+    border-top:
+
+        1px solid
+        var(--hairline-color);
+
+}
+
+
+.recent-orders-table a {
+
+    font-weight: 700;
+
+    text-decoration: none;
+
+}
+
+
+.recent-orders-table td span {
+
+    display: block;
+
+    font-size: 12px;
+
+    opacity: 0.6;
+
+    margin-top: 3px;
+
+}
+
+
+/* ================================================= */
+/* BADGES */
+/* ================================================= */
+
+.badge {
+
+    display: inline-block;
+
+    padding: 5px 10px;
+
+    border-radius: 20px;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+}
+
+
+.badge-paid,
+.badge-confirmed,
+.badge-completed {
+
+    color: #155724;
+
+    background: #d4edda;
+
+}
+
+
+.badge-unpaid,
+.badge-pending {
+
+    color: #856404;
+
+    background: #fff3cd;
+
+}
+
+
+.badge-failed,
+.badge-cancelled {
+
+    color: #721c24;
+
+    background: #f8d7da;
+
+}
+
+
+.badge-preparing {
+
+    color: #004085;
+
+    background: #cce5ff;
+
+}
+
+
+.badge-delivery {
+
+    color: #0c5460;
+
+    background: #d1ecf1;
+
+}
+
+
+/* ================================================= */
+/* QUICK ACTIONS */
+/* ================================================= */
+
+.quick-action {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 15px;
+
+    margin-top: 12px;
+
+    border-radius: 10px;
+
+    text-decoration: none;
+
+    border:
+
+        1px solid
+        var(--hairline-color);
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+
+}
+
+
+.quick-action:hover {
+
+    transform: translateX(4px);
+
+    background:
+
+        rgba(255,255,255,0.04);
+
+}
+
+
+.quick-action > span {
+
+    font-size: 24px;
+
+}
+
+
+.quick-action strong {
+
+    display: block;
+
+}
+
+
+.quick-action small {
+
+    opacity: 0.6;
+
+}
+
+
+/* ================================================= */
+/* EMPTY STATE */
+/* ================================================= */
+
+.empty-state {
+
+    text-align: center;
+
+    padding: 50px 20px;
+
+    opacity: 0.7;
+
+}
+
+
+.empty-icon {
+
+    font-size: 40px;
+
+}
+
+
+.empty-state h3 {
+
+    margin-bottom: 5px;
+
+}
+
+
+/* ================================================= */
+/* DJANGO ADMIN */
+/* ================================================= */
+
+.django-admin-section {
+
+    margin-top: 40px;
+
+    padding-top: 20px;
+
+    border-top:
+
+        1px solid
+        var(--hairline-color);
+
+}
+
+
+/* ================================================= */
+/* RESPONSIVE */
+/* ================================================= */
+
+@media (max-width: 900px) {
+
+    .dashboard-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .dashboard-header h1 {
+
+        font-size: 24px;
+
+    }
+
+
+    .dashboard-panel {
+
+        padding: 16px;
+
+    }
+
+
+    .panel-header {
+
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 10px;
+
+    }
+
+}
+
+/* to remove django admistartion title */
+.breadcrumbs {
+    display: none;
+}
+    
+
+</style>
+
+{% endblock %}

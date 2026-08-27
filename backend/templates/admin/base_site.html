@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+
+{% block title %}
+    {% if subtitle %}
+        {{ subtitle }} |
+    {% endif %}
+    Manjaly's Fresh Direct Admin
+{% endblock %}
+
+{% block branding %}
+    <h1 id="site-name">
+        <a href="{% url 'admin:index' %}">
+            🥩 Manjaly's Fresh Direct
+        </a>
+    </h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
