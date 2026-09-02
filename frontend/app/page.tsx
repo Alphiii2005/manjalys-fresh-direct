@@ -1,5 +1,11 @@
 import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
+import Hero from "@/components/Hero";
+import ProductSection from "@/components/ProductSection";
+import AboutSection from "@/components/AboutSection";
+import Testimonials from "@/components/Testimonials";
+import DeliveryBanner from "@/components/DeliveryBanner";
+import Footer from "@/components/Footer";
 
 async function getProducts() {
   const response = await fetch(
@@ -16,14 +22,12 @@ export default async function Home() {
   return (
     <main>
       <Navbar />
-
-      {products.map((product: any) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-        />
-      ))}
-
+      <Hero />
+      <ProductSection products={products}/>
+      <AboutSection />
+      <Testimonials />
+      <DeliveryBanner />
+      <Footer />
     </main>
   );
 }
