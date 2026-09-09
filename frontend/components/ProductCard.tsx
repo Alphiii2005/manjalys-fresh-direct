@@ -18,6 +18,9 @@ export default function ProductCard({
 }) {
   const { addToCart } = useCart();
 
+  const stock = Number(product.stock_kg);
+  const isOutOfStock = stock <= 0;
+
   return (
     <article className="group overflow-hidden rounded-2xl border border-[#3E3028]/10 bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
 
@@ -48,18 +51,27 @@ export default function ProductCard({
       {/* Content */}
       <div className="p-6">
 
-        <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="font-serif text-2xl font-semibold text-[#3E3028]">
+            {product.name}
+          </h3>
 
-          <div>
-            <h3 className="font-serif text-2xl font-semibold text-[#3E3028]">
-              {product.name}
-            </h3>
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#3E3028]/60">
+            {product.description}
+          </p>
+        </div>
 
-            <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#3E3028]/60">
-              {product.description}
+        {/* Stock */}
+        <div className="mt-4">
+          {isOutOfStock ? (
+            <p className="text-sm font-medium text-red-600">
+              Out of stock
             </p>
-          </div>
-
+          ) : (
+            <p className="text-sm font-medium text-[#68735B]">
+              {stock} kg available
+            </p>
+          )}
         </div>
 
         {/* Bottom */}
@@ -77,9 +89,14 @@ export default function ProductCard({
 
           <button
             onClick={() => addToCart(product)}
-            className="rounded-full bg-[#3E3028] px-5 py-2.5 text-sm font-medium text-[#F7F1E7] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#514137]"
+            disabled={isOutOfStock}
+            className={
+              isOutOfStock
+                ? "cursor-not-allowed rounded-full bg-[#D8D3CB] px-5 py-2.5 text-sm font-medium text-[#3E3028]/40"
+                : "rounded-full bg-[#3E3028] px-5 py-2.5 text-sm font-medium text-[#F7F1E7] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#514137]"
+            }
           >
-            Add +
+            {isOutOfStock ? "Sold Out" : "Add +"}
           </button>
 
         </div>

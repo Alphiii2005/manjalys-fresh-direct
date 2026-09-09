@@ -18,8 +18,13 @@ export function CartProvider({
       );
 
       const increment = Number(product.quantity_increment);
+      const stock = Number(product.stock_kg);
 
       if (existing) {
+        if (existing.quantity + increment > stock) {
+          return currentCart;
+        }
+
         return currentCart.map((item) =>
           item.id === product.id
             ? {
@@ -28,6 +33,10 @@ export function CartProvider({
               }
             : item
         );
+      }
+
+      if (increment > stock) {
+        return currentCart;
       }
 
       return [
@@ -39,7 +48,7 @@ export function CartProvider({
       ];
     });
   }
-
+  
   function increaseQuantity(productId: number) {
     setCart((currentCart) =>
       currentCart.map((item) => {
@@ -48,6 +57,11 @@ export function CartProvider({
         }
 
         const increment = Number(item.quantity_increment);
+        const stock = Number(item.stock_kg);
+
+        if (item.quantity + increment > stock) {
+          return item;
+        }
 
         return {
           ...item,
