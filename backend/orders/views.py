@@ -321,330 +321,130 @@ class CreateOrderView(APIView):
 
 @csrf_exempt
 def stripe_webhook(request):
-
     if request.method != "POST":
-
-        return JsonResponse(
-            {
-                "error": (
-                    "Only POST requests are allowed."
-                )
-            },
-            status=405
-        )
+        return JsonResponse({"error": "Invalid method"}, status=405)
 
     payload = request.body
-
-    sig_header = request.META.get(
-        "HTTP_STRIPE_SIGNATURE"
-    )
-
-    if not sig_header:
-
-        return JsonResponse(
-            {
-                "error": (
-                    "Missing Stripe signature."
-                )
-            },
-            status=400
-        )
-
-    # ----------------------------------------
-    # Verify Stripe webhook signature
-    # ----------------------------------------
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
 
     try:
-
         event = stripe.Webhook.construct_event(
             payload,
             sig_header,
-            settings.STRIPE_WEBHOOK_SECRET
+            settings.STRIPE_WEBHOOK_SECRET,
         )
-
     except ValueError:
-
-        print(
-            "WEBHOOK ERROR: Invalid payload"
-        )
-
         return JsonResponse(
-            {
-                "error": "Invalid payload."
-            },
-            status=400
+            {"error": "Invalid payload"},
+            status=400,
         )
-
     except stripe.error.SignatureVerificationError:
-
-        print(
-            "WEBHOOK ERROR: Invalid signature"
-        )
-
         return JsonResponse(
-            {
-                "error": "Invalid signature."
-            },
-            status=400
+            {"error": "Invalid signature"},
+            status=400,
         )
 
-    print(
-        "STRIPE EVENT RECEIVED:",
-        event["type"]
-    )
+    if event["type"] != "checkout.session.completed":
+        return JsonResponse({"status": "ignored"})
 
-    # ----------------------------------------
-    # Checkout completed
-    # ----------------------------------------
+    session = event["data"]["object"]
 
-    if event["type"] == "checkout.session.completed":
+    # StripeObject does not support normal .get() calls.
+    # Use dictionary-style access instead.
+    metadata = session["metadata"]
+    order_id = metadata["order_id"]
 
-        session = event["data"]["object"]
-
-        print(
-            "CHECKOUT SESSION:",
-            session["id"]
+    if not order_id:
+        return JsonResponse(
+            {"error": "Missing order ID"},
+            status=400,
         )
 
-        # ------------------------------------
-        # Get metadata
-        # ------------------------------------
-
-        metadata = session["metadata"]
-
-        print(
-            "METADATA:",
-            metadata
+    if session["payment_status"] != "paid":
+        return JsonResponse(
+            {"status": "payment not completed"}
         )
 
-        order_id = metadata["order_id"]
-
-        print(
-            "ORDER ID:",
-            order_id
-        )
-
-        # ------------------------------------
-        # Find Django order
-        # ------------------------------------
-
-        try:
-
-            order = Order.objects.get(
-                id=order_id
-            )
-
-        except Order.DoesNotExist:
-
-            print(
-                "WEBHOOK ERROR: "
-                f"Order does not exist: {order_id}"
-            )
-
-            return JsonResponse(
-                {
-                    "error": "Order not found."
-                },
-                status=404
-            )
-
-        print(
-            "ORDER FOUND:",
-            order.id
-        )
-
-        # ------------------------------------
-        # Confirm Stripe payment
-        # ------------------------------------
-
-        if session["payment_status"] != "paid":
-
-            print(
-                "PAYMENT NOT COMPLETED:",
-                session["payment_status"]
-            )
-
-            return JsonResponse(
-                {
-                    "status": (
-                        "payment_not_completed"
-                    )
-                },
-                status=200
-            )
-
-        # ------------------------------------
-        # Prevent duplicate processing
-        # ------------------------------------
-
-        if order.payment_status == "paid":
-
-            print(
-                f"ORDER #{order.id} "
-                "ALREADY PAID. "
-                "Skipping stock deduction."
-            )
-
-            return JsonResponse(
-                {
-                    "status": "already_processed"
-                },
-                status=200
-            )
-
-        # ------------------------------------
-        # Payment + stock update
-        # ------------------------------------
-
+    try:
         with transaction.atomic():
 
-            # Lock the order
+            # Lock the order so the same order cannot
+            # be processed twice at the same time.
             order = (
                 Order.objects
                 .select_for_update()
-                .get(id=order.id)
+                .get(id=order_id)
             )
 
-            # Check again after locking
+            # Idempotency check.
+            # If Stripe sends the same webhook again,
+            # do not deduct stock a second time.
             if order.payment_status == "paid":
-
-                print(
-                    f"ORDER #{order.id} "
-                    "ALREADY PROCESSED."
-                )
-
                 return JsonResponse(
-                    {
-                        "status": (
-                            "already_processed"
-                        )
-                    },
-                    status=200
+                    {"status": "already processed"}
                 )
 
-            # --------------------------------
-            # Deduct stock
-            # --------------------------------
+            # Process every item in the order.
+            for item in order.items.all():
 
-            for item in order.items.select_related(
-                "product"
-            ):
-
-                product = item.product
+                # Lock the product row before checking
+                # and changing its stock.
+                product = (
+                    Product.objects
+                    .select_for_update()
+                    .get(id=item.product_id)
+                )
 
                 quantity = item.quantity
 
-                print(
-                    "STOCK UPDATE:",
-                    product.name,
-                    "CURRENT:",
-                    product.stock_kg,
-                    "ORDERED:",
-                    quantity
-                )
-
-                # Safety check
+                # Make sure there is still enough stock.
                 if quantity > product.stock_kg:
-
-                    print(
-                        "WEBHOOK ERROR: "
-                        f"Not enough stock "
-                        f"for {product.name}"
-                    )
-
                     return JsonResponse(
                         {
                             "error": (
-                                f"Not enough stock "
-                                f"for {product.name}."
+                                f"Not enough stock for "
+                                f"{product.name}"
                             )
                         },
-                        status=400
+                        status=400,
                     )
 
-                # Deduct stock
+                # Deduct stock.
                 product.stock_kg -= quantity
 
                 product.save(
-                    update_fields=[
-                        "stock_kg"
-                    ]
+                    update_fields=["stock_kg"]
                 )
 
-                print(
-                    "NEW STOCK:",
-                    product.stock_kg
-                )
-
-            # --------------------------------
-            # Mark order as paid
-            # --------------------------------
-
+            # Mark the order as paid only after
+            # all stock checks and deductions succeed.
             order.payment_status = "paid"
-
             order.status = "pending"
 
             order.save(
                 update_fields=[
                     "payment_status",
-                    "status"
+                    "status",
                 ]
             )
 
-            print(
-                f"ORDER #{order.id} "
-                "MARKED AS PAID"
-            )
+    except Order.DoesNotExist:
+        return JsonResponse(
+            {"error": "Order not found"},
+            status=404,
+        )
 
-             # --------------------------------
-            # Send customer confirmation email
-            # --------------------------------
+    except Product.DoesNotExist:
+        return JsonResponse(
+            {"error": "Product not found"},
+            status=404,
+        )
 
-            try:
+    # Send emails after the database transaction succeeds.
+    try:
+        send_customer_order_confirmation(order)
+        send_owner_new_order_notification(order)
+    except Exception as e:
+        print(f"Order email failed: {e}")
 
-                send_customer_order_confirmation(
-                    order
-                )
-
-                print(
-                    f"CUSTOMER EMAIL SENT "
-                    f"FOR ORDER #{order.id}"
-                )
-
-            except Exception as error:
-
-                print(
-                    f"CUSTOMER EMAIL ERROR "
-                    f"FOR ORDER #{order.id}:",
-                    error
-                )
-
-            # --------------------------------
-            # Send owner notification email
-            # --------------------------------
-
-            try:
-
-                send_owner_new_order_notification(
-                    order
-                )
-
-                print(
-                    f"OWNER NOTIFICATION SENT "
-                    f"FOR ORDER #{order.id}"
-                )
-
-            except Exception as error:
-
-                print(
-                    f"OWNER EMAIL ERROR "
-                    f"FOR ORDER #{order.id}:",
-                    error
-                )
-
-    return JsonResponse(
-        {
-            "status": "success"
-        },
-        status=200
-    )
+    return JsonResponse({"status": "success"})
